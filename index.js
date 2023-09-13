@@ -10,7 +10,7 @@ app.set('view engine', 'hbs');
 app.engine('hbs', hbs.engine({
     extname:'hbs',
     defaultLayout:'main',
-    layoutsDir:__dirname+'/view/layouts/'
+    layoutsDir:__dirname+'/views/layouts'
 }))
 
 app.use(express.static('public'));
@@ -20,14 +20,14 @@ const mysql = require("mysql");
 app.use(bodyParser.urlencoded({extended: true}));
 
 //connect to database
-const db = mysql.createConnection({
+const con = mysql.createConnection({
     host:"localhost",
     user:"joogaa",
     password:"JoogaaParool123",
     database:"joga_mysql"
 });
 
-db.connect(function(err){
+con.connect(function(err){
     if(err) throw err;
     console.log('connected to joga_mysql db');
 });
@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
 
 //show articles by this slug
 app.get('/article/:slug', (req, res) => {
-    let query = 'SELECT * FROM article WHERE slug="${req.params.slug}"'
+    let query = `SELECT article.name as title, article.slug, article.image, article.body, article.published, author.name AS name FROM article LEFT JOIN author ON article.author_id = author.id WHERE article.slug = "${req.params.slug}"`
     let article
     con.query(query, (err, result) => {
         if (err) throw err;
@@ -59,6 +59,22 @@ app.get('/article/:slug', (req, res) => {
         })
     })
 })
+
+app.get('/:author', (req, res) => {
+    let query = `SELECT article.name as title, article.image, article.slug, author.name as name FROM article INNER JOIN author ON article.author_id=author.id WHERE article.author_id = (SELECT id FROM author WHERE name = "${req.params.author}")`
+    let authors = []
+    con.query(query, (err, result) => {
+        authors = result
+        let authorName = result[0].name
+        console.log (authors);
+        console.log (authorName);
+        res.render('author', {
+            authors: authors,
+            authorName: authorName
+        })
+    })
+})
+
 
 app.listen(3000,() => {
     console.log('app is started at localhost')
